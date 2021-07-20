@@ -23,8 +23,9 @@ package client
 import (
 	"context"
 	"encoding/base64"
-	"errors"
+	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -93,11 +94,11 @@ func Request(method, url string, headers map[string]interface{}, requestBody io.
 		if nil != logReq {
 			sb.Write(logReq)
 		}
-		sb.WriteString("\n======>> Response <<======\n")
+		sb.WriteString("\n\n======>> Response <<======\n")
 		if nil != logRes {
 			sb.Write(logRes)
 		}
-		sb.WriteString(fmt.Sprintf("\n================= 【%v】End =================\n", traceID))
+		sb.WriteString(fmt.Sprintf("\n\n================= 【%v】End =================\n", traceID))
 		gog.InfoTag(tag, sb.String())
 	}()
 
@@ -119,25 +120,25 @@ func Request(method, url string, headers map[string]interface{}, requestBody io.
 		gog.Error(err)
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	// response log
 	logRes, _ = httputil.DumpResponse(res, true)
 
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(res.Status)
-	}
-
-	return response(res.Body)
-}
-
-// 响应处理
-func response(responseBody io.ReadCloser) ([]byte, error) {
-	defer responseBody.Close()
-	bs, err := ioutil.ReadAll(responseBody)
+	bs, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		gog.Error(err)
 		return nil, err
 	}
+
+	if res.StatusCode != http.StatusOK {
+		var er ErrResponse
+		if err = json.Unmarshal(bs, &er); nil != err {
+			return nil, errors.WithMessage(errors.New(res.Status), err.Error())
+		}
+		return nil, errors.New(res.Status + ", " + er.Error + ", " + er.Message)
+	}
+
 	return bs, nil
 }
 
@@ -152,4 +153,11 @@ func findPathVariables(url string) map[string]string {
 		res[item[0]] = item[1]
 	}
 	return res
+}
+
+type ErrResponse struct {
+	Status    int    `json:"status"`
+	Error     string `json:"error"`
+	Message   string `json:"message"`
+	Timestamp string `json:"timestamp"`
 }
