@@ -23,6 +23,7 @@ package client
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -121,6 +122,10 @@ func Request(method, url string, headers map[string]interface{}, requestBody io.
 
 	// response log
 	logRes, _ = httputil.DumpResponse(res, true)
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New(res.Status)
+	}
 
 	return response(res.Body)
 }
