@@ -37,8 +37,18 @@ func PostForm(url string, params map[string]interface{}) ([]byte, error) {
 	return PostFormWithHeader(url, nil, params)
 }
 
+// PostClientForm 普通 POST form-urlencoded 请求
+func PostClientForm(client *http.Client, url string, params map[string]interface{}) ([]byte, error) {
+	return PostClientFormWithHeader(client, url, nil, params)
+}
+
 // PostFormWithHeader 带请求头的 POST form-urlencoded 请求
 func PostFormWithHeader(url string, headers map[string]interface{}, params map[string]interface{}) ([]byte, error) {
+	return PostClientFormWithHeader(http.DefaultClient, url, headers, params)
+}
+
+// PostClientFormWithHeader 带请求头的 POST form-urlencoded 请求
+func PostClientFormWithHeader(client *http.Client, url string, headers map[string]interface{}, params map[string]interface{}) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("invalid empty url")
 	}
@@ -69,7 +79,7 @@ func PostFormWithHeader(url string, headers map[string]interface{}, params map[s
 		headers["Content-Type"] = "application/x-www-form-urlencoded"
 	}
 
-	bs, err := Request(http.MethodPost, url, headers, payload)
+	bs, err := RequestClient(client, http.MethodPost, url, headers, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +91,18 @@ func PostJSON(url string, value interface{}) ([]byte, error) {
 	return PostJSONWithHeader(url, nil, value)
 }
 
+// PostClientJSON 普通 POST raw 请求
+func PostClientJSON(client *http.Client, url string, value interface{}) ([]byte, error) {
+	return PostClientJSONWithHeader(client, url, nil, value)
+}
+
 // PostJSONWithHeader 带请求头的 POST raw 请求
 func PostJSONWithHeader(url string, headers map[string]interface{}, value interface{}) ([]byte, error) {
+	return PostClientJSONWithHeader(http.DefaultClient, url, headers, value)
+}
+
+// PostClientJSONWithHeader 带请求头的 POST raw 请求
+func PostClientJSONWithHeader(client *http.Client, url string, headers map[string]interface{}, value interface{}) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("invalid empty url")
 	}
@@ -120,7 +140,7 @@ func PostJSONWithHeader(url string, headers map[string]interface{}, value interf
 		headers["Content-Type"] = "application/json"
 	}
 
-	bs, err = Request(http.MethodPost, url, headers, bytes.NewBuffer(bs))
+	bs, err = RequestClient(client, http.MethodPost, url, headers, bytes.NewBuffer(bs))
 	if err != nil {
 		return nil, err
 	}

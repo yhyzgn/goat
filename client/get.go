@@ -33,8 +33,18 @@ func Get(url string, params map[string]interface{}) ([]byte, error) {
 	return GetWithHeader(url, nil, params)
 }
 
+// GetClient 普通 GET 请求
+func GetClient(client *http.Client, url string, params map[string]interface{}) ([]byte, error) {
+	return GetClientWithHeader(client, url, nil, params)
+}
+
 // GetWithHeader 带请求头的 GET 请求
 func GetWithHeader(url string, headers map[string]interface{}, params map[string]interface{}) ([]byte, error) {
+	return GetClientWithHeader(http.DefaultClient, url, headers, params)
+}
+
+// GetClientWithHeader 带请求头的 GET 请求
+func GetClientWithHeader(client *http.Client, url string, headers map[string]interface{}, params map[string]interface{}) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("invalid empty url")
 	}
@@ -74,7 +84,7 @@ func GetWithHeader(url string, headers map[string]interface{}, params map[string
 			"Content-Type": "application/x-www-form-urlencoded",
 		}
 	}
-	bs, err := Request(http.MethodGet, b.String(), headers, nil)
+	bs, err := RequestClient(client, http.MethodGet, b.String(), headers, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -6,8 +6,32 @@
 
 package client
 
-import "testing"
+import (
+	"crypto/tls"
+	"fmt"
+	"net/http"
+	"os"
+	"testing"
+)
 
 func TestFindPathVariables(t *testing.T) {
 	findPathVariables("/api/{id}/book/{code}")
+}
+
+func TestRequest(t *testing.T) {
+	//reqUrl := "http://www.baidu.com"
+	reqUrl := "https://api.e-learn.io/watch?courseId=4666&lectureId=34947&coursewareId=59427"
+
+	var PTransport = &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: PTransport}
+
+	os.Setenv("HTTPS_PROXY", "https://222.74.202.245:8080")
+
+	bs, err := RequestClient(client, http.MethodGet, reqUrl, nil, nil)
+
+	fmt.Println(string(bs))
+	fmt.Println(err)
 }

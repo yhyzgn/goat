@@ -63,7 +63,14 @@ func BuildRawQuery(params map[string]interface{}) string {
 }
 
 // Request 请求处理
+//
+// http.DefaultClient
 func Request(method, url string, headers map[string]interface{}, requestBody io.Reader) ([]byte, error) {
+	return RequestClient(http.DefaultClient, method, url, headers, requestBody)
+}
+
+// RequestClient 请求处理
+func RequestClient(client *http.Client, method, url string, headers map[string]interface{}, requestBody io.Reader) ([]byte, error) {
 	var (
 		logReq, logRes []byte
 	)
@@ -102,7 +109,9 @@ func Request(method, url string, headers map[string]interface{}, requestBody io.
 		gog.InfoTag(tag, sb.String())
 	}()
 
-	req.Header.Set("User-Agent", built.Name+"/"+built.Version)
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", built.Name+"/"+built.Version)
+	}
 	req.Header.Set("Connection", "Keep-Alive")
 
 	// 自定义 header
@@ -115,12 +124,17 @@ func Request(method, url string, headers map[string]interface{}, requestBody io.
 	// request log
 	logReq, _ = httputil.DumpRequest(req, true)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		gog.Error(err)
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(res.Body)
 
 	// response log
 	logRes, _ = httputil.DumpResponse(res, true)
