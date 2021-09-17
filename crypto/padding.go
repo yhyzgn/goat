@@ -96,12 +96,6 @@ type PKCS5Padding struct {
 	PKCS7Padding
 }
 
-// Padding ...
-func (*PKCS5Padding) Padding(src []byte, blockSize int) []byte {
-	// PKCS5 中 blockSize 固定为 8
-	return pkcs57Padding(src, blockSize)
-}
-
 // ========================================================== PKCS7Padding ==========================================================
 
 // PKCS7Padding ...
