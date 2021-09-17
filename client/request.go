@@ -169,6 +169,7 @@ func findPathVariables(url string) map[string]string {
 	return res
 }
 
+// ErrResponse http 错误响应
 type ErrResponse struct {
 	Status    int    `json:"status"`
 	Error     string `json:"error"`

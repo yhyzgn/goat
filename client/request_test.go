@@ -19,8 +19,8 @@ func TestFindPathVariables(t *testing.T) {
 }
 
 func TestRequest(t *testing.T) {
-	//reqUrl := "http://www.baidu.com"
-	reqUrl := "https://api.e-learn.io/watch?courseId=4666&lectureId=34947&coursewareId=59427"
+	//reqURL := "http://www.baidu.com"
+	reqURL := "https://api.e-learn.io/watch?courseId=4666&lectureId=34947&coursewareId=59427"
 
 	var PTransport = &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
@@ -30,7 +30,7 @@ func TestRequest(t *testing.T) {
 
 	os.Setenv("HTTPS_PROXY", "https://222.74.202.245:8080")
 
-	bs, err := RequestClient(client, http.MethodGet, reqUrl, nil, nil)
+	bs, err := RequestClient(client, http.MethodGet, reqURL, nil, nil)
 
 	fmt.Println(string(bs))
 	fmt.Println(err)
