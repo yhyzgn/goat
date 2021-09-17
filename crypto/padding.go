@@ -96,6 +96,12 @@ type PKCS5Padding struct {
 	PKCS7Padding
 }
 
+// Padding ...
+func (*PKCS5Padding) Padding(src []byte, blockSize int) []byte {
+	// PKCS5 中 blockSize 固定为 8
+	return pkcs57Padding(src, 8)
+}
+
 // ========================================================== PKCS7Padding ==========================================================
 
 // PKCS7Padding ...
@@ -104,9 +110,7 @@ type PKCS7Padding struct {
 
 // Padding ...
 func (*PKCS7Padding) Padding(src []byte, blockSize int) []byte {
-	paddingCount := blockSize - len(src)%blockSize
-	padding := bytes.Repeat([]byte{byte(paddingCount)}, paddingCount)
-	return append(src, padding...)
+	return pkcs57Padding(src, blockSize)
 }
 
 // UnPadding ...
@@ -114,4 +118,10 @@ func (*PKCS7Padding) UnPadding(src []byte) []byte {
 	length := len(src)
 	padding := int(src[length-1])
 	return src[:(length - padding)]
+}
+
+func pkcs57Padding(src []byte, blockSize int) []byte {
+	paddingCount := blockSize - len(src)%blockSize
+	padding := bytes.Repeat([]byte{byte(paddingCount)}, paddingCount)
+	return append(src, padding...)
 }

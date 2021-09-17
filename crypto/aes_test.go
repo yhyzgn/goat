@@ -6,6 +6,7 @@ import (
 
 const (
 	aesKey = "a80a28b4f10c4794ae32815b47bc50e7"
+	//aesKey = "a80a28b4f10c4794"
 	aesSrc = "李万姬"
 	aesIV  = "c6320b4f17334fbd"
 )
