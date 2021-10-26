@@ -9,6 +9,7 @@ package godis
 import (
 	"github.com/yhyzgn/gog"
 	"math"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -71,10 +72,10 @@ type Limiter struct {
 	sync.Mutex
 	client   *Client       // client
 	key      Key           // 令牌桶唯一标识
-	capacity uint          // 令牌桶容量，默认值 = 单位时间内生成的令牌数
+	capacity float64       // 令牌桶容量，默认值 = 单位时间内生成的令牌数
 	period   time.Duration // 规定一定数量令牌的单位时间
-	quota    uint          // 单位时间内生成令牌的数量
-	quantity uint          // 每次需要的令牌数，默认为 1
+	quota    float64       // 单位时间内生成令牌的数量
+	quantity uint64        // 每次需要的令牌数，默认为 1
 }
 
 // LimiterOption ...
@@ -89,13 +90,13 @@ func (opt limiterOption) apply(limiter *Limiter) {
 }
 
 // NewLimiter 创建一个限流器
-func NewLimiter(client *Client, key Key, quota uint, period time.Duration, options ...LimiterOption) *Limiter {
+func NewLimiter(client *Client, key Key, quota uint64, period time.Duration, options ...LimiterOption) *Limiter {
 	limiter := &Limiter{
 		client:   client,
 		key:      key,
-		capacity: quota, // 默认值 = 单位时间内生成的令牌数
+		capacity: float64(quota), // 默认值 = 单位时间内生成的令牌数
 		period:   period,
-		quota:    quota,
+		quota:    float64(quota),
 		quantity: 1,
 	}
 
@@ -140,79 +141,135 @@ func (lm *Limiter) AcquireWith(key Key) bool {
 }
 
 func (lm *Limiter) acquireWithLuaScript(key Key) ([]int64, error) {
-	return redis.Int64s(lm.client.Pool.call(lm.key+key, func(conn redis.Conn, realKey string) (interface{}, error) {
+	return redis.Int64s(lm.client.Pool.call(key, func(conn redis.Conn, realKey string) (interface{}, error) {
 		return limiterScript.Do(conn, realKey, lm.capacity, int(lm.period/time.Second), lm.quota, lm.quantity)
 	}))
 }
 
 func (lm *Limiter) acquireWithNative(key Key) ([]int64, error) {
+	// 1、先判断令牌桶是否存在
+	// - 不存在：初始化令牌桶，并设置过期时间
+	// -   存在：计算从上一次更新到现在这段时间内应该要生成的令牌数，更新令牌数量，并设置过期时间
+	// 2、查询目前令牌数
+	// - 满足所需令牌数：减掉所需令牌数后更新令牌数量，并设置过期时间
+	// -        不满足：已超过限流频率
 	lm.Lock()
 	defer lm.Unlock()
 
 	capacity, quota, quantity := lm.capacity, lm.quota, lm.quantity
-	timestamp := time.Now().Unix()
+	now := time.Now().Unix()
 
+	var (
+		temp   string
+		tokens float64
+		last   int64
+	)
+
+	// 1、判断令牌桶是否存在
 	if exist, err := lm.client.Exists(key); err != nil || !exist {
-		// 不存在，新建令牌桶
-		lt := LimiterToken{Tokens: float64(capacity), Timestamp: timestamp}
-		if err = lm.client.JSON.Val.SetWithExpiry(key, lt, lm.period); err != nil {
+		// 不存在，初始化
+		// 保存并设置过期时间
+		if err = lm.client.String.Hash.Set(key, "tokens", floatToString(capacity)); err != nil {
+			return nil, err
+		}
+		if err = lm.client.String.Hash.Set(key, "timestamp", int64ToString(now)); err != nil {
+			return nil, err
+		}
+		if err = lm.client.Expire(key, lm.period); err != nil {
 			return nil, err
 		}
 	} else {
+		// 存在
 		// 计算从上一次更新到现在这段时间内应该要生成的令牌数
-		var last LimiterToken
-		if err = lm.client.JSON.Val.Get(key, &last); nil != err {
+		if err = lm.client.String.Hash.Get(key, "tokens", &temp); err != nil {
 			return nil, err
 		}
-		supply := (float64(timestamp) - float64(last.Timestamp)) / float64(lm.period/time.Second) * float64(quota)
+		tokens = stringToFloat(temp)
+		if err = lm.client.String.Hash.Get(key, "timestamp", &temp); err != nil {
+			return nil, err
+		}
+		last = stringToInt64(temp)
+
+		supply := float64(now-last) / lm.period.Seconds() * quota
 		if supply > 0 {
-			// 重置令牌数
-			tokens := math.Min(last.Tokens+supply, float64(capacity))
-			lt := LimiterToken{Tokens: tokens, Timestamp: timestamp}
-			if err = lm.client.JSON.Val.SetWithExpiry(key, lt, lm.period); err != nil {
+			// 重置令牌数量
+			tokens = math.Min(tokens+supply, capacity)
+			if err = lm.client.String.Hash.Set(key, "tokens", floatToString(tokens)); err != nil {
+				return nil, err
+			}
+			if err = lm.client.String.Hash.Set(key, "timestamp", int64ToString(now)); err != nil {
+				return nil, err
+			}
+			if err = lm.client.Expire(key, lm.period); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	var lt LimiterToken
-	if err := lm.client.JSON.Val.Get(key, &lt); nil != err {
+	if err := lm.client.String.Hash.Get(key, "tokens", &temp); err != nil {
 		return nil, err
 	}
-
-	if lt.Tokens < float64(quantity) {
-		// 令牌不够
-		return []int64{0, int64(lt.Tokens)}, nil
+	tokens = stringToFloat(temp)
+	if tokens < float64(quantity) {
+		// 令牌数量不足，返回0表示已超过限流，同时返回剩余令牌数
+		return []int64{0, int64(tokens)}, nil
 	}
-
 	// 令牌充足
 	// 重置剩余令牌数
-	tokens := lt.Tokens - float64(quantity)
-	lt = LimiterToken{Tokens: tokens, Timestamp: timestamp}
-	if err := lm.client.JSON.Val.SetWithExpiry(key, lt, lm.period); err != nil {
+	tokens -= float64(quantity)
+	if err := lm.client.String.Hash.Set(key, "tokens", floatToString(tokens)); err != nil {
 		return nil, err
 	}
-
-	// 返回当前所需要的令牌数量，同时返回剩余令牌数
+	if err := lm.client.String.Hash.Set(key, "timestamp", int64ToString(now)); err != nil {
+		return nil, err
+	}
+	if err := lm.client.Expire(key, lm.period); err != nil {
+		return nil, err
+	}
+	// 返回所需令牌数和剩余令牌数
 	return []int64{int64(quantity), int64(tokens)}, nil
 }
 
 // SetLimiterCapacity 设置桶容量
-func SetLimiterCapacity(capacity uint) LimiterOption {
+func SetLimiterCapacity(capacity float64) LimiterOption {
 	return limiterOption(func(limiter *Limiter) {
 		limiter.capacity = capacity
 	})
 }
 
 // SetLimiterQuantity 设置每次需要取得的令牌数
-func SetLimiterQuantity(quantity uint) LimiterOption {
+func SetLimiterQuantity(quantity uint64) LimiterOption {
 	return limiterOption(func(limiter *Limiter) {
 		limiter.quantity = quantity
 	})
 }
 
-// LimiterToken 令牌
-type LimiterToken struct {
-	Tokens    float64 `json:"tokens"`
-	Timestamp int64   `json:"timestamp"`
+func floatToString(src float64) string {
+	return strconv.FormatFloat(src, 'f', -1, 64)
+}
+
+func int64ToString(src int64) string {
+	return strconv.FormatInt(src, 10)
+}
+
+func stringToFloat(src string) float64 {
+	if src == "" {
+		return 0
+	}
+	if res, err := strconv.ParseFloat(src, 64); err != nil {
+		return 0
+	} else {
+		return res
+	}
+}
+
+func stringToInt64(src string) int64 {
+	if src == "" {
+		return 0
+	}
+	if res, err := strconv.ParseInt(src, 10, 64); err != nil {
+		return 0
+	} else {
+		return res
+	}
 }

@@ -69,7 +69,7 @@ func (rp *RedisPool) Locker(key Key, options ...LockerOption) *Locker {
 }
 
 // Limiter 获取限流器
-func (rp *RedisPool) Limiter(client *Client, key Key, quota uint, period time.Duration, options ...LimiterOption) *Limiter {
+func (rp *RedisPool) Limiter(client *Client, key Key, quota uint64, period time.Duration, options ...LimiterOption) *Limiter {
 	return NewLimiter(client, key, quota, period, options...)
 }
 

@@ -67,7 +67,7 @@ func (c *Client) Locker(key Key, options ...LockerOption) *Locker {
 }
 
 // Limiter 获取限流器
-func (c *Client) Limiter(key Key, quota uint, period time.Duration, options ...LimiterOption) *Limiter {
+func (c *Client) Limiter(key Key, quota uint64, period time.Duration, options ...LimiterOption) *Limiter {
 	return c.Pool.Limiter(c, key, quota, period, options...)
 }
 

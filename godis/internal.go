@@ -32,7 +32,7 @@ func exists(conn redis.Conn, key string) (bool, error) {
 }
 
 func expire(conn redis.Conn, key string, expiry time.Duration) (valid bool, err error) {
-	return redis.Bool(conn.Do("PEXPIRE", key, expiry.Milliseconds(), 10))
+	return redis.Bool(conn.Do("PEXPIRE", key, expiry.Milliseconds()))
 }
 
 func del(conn redis.Conn, key ...string) error {
