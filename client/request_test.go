@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 )
 
@@ -22,16 +21,14 @@ func TestRequest(t *testing.T) {
 	//reqURL := "http://www.baidu.com"
 	reqURL := "https://api.e-learn.io/watch?courseId=4666&lectureId=34947&coursewareId=59427"
 
-	var PTransport = &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
+	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: PTransport}
-
-	os.Setenv("HTTPS_PROXY", "https://222.74.202.245:8080")
+	client := &http.Client{Transport: tr}
 
 	bs, err := RequestClient(client, http.MethodGet, reqURL, nil, nil)
 
+	fmt.Println("*************************************************")
 	fmt.Println(string(bs))
 	fmt.Println(err)
 }

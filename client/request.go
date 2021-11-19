@@ -101,7 +101,7 @@ func RequestClient(client *http.Client, method, url string, headers map[string]i
 		if nil != logReq {
 			sb.Write(logReq)
 		}
-		sb.WriteString("\n\n======>> Response <<======\n")
+		sb.WriteString("\n======>> Response <<======\n")
 		if nil != logRes {
 			sb.Write(logRes)
 		}
