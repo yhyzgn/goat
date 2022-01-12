@@ -12,16 +12,16 @@ import (
 )
 
 func TestGoroutineId(t *testing.T) {
-	t.Log(GoroutineId())
+	t.Log(GoroutineID())
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			t.Log(GoroutineId())
+			t.Log(GoroutineID())
 		}()
 	}
 
 	time.Sleep(time.Second)
 
-	t.Log(GoroutineId())
-	t.Log(GoroutineId())
+	t.Log(GoroutineID())
+	t.Log(GoroutineID())
 }

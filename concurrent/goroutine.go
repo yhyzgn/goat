@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// GoroutineId 获取当前协程ID
-func GoroutineId() string {
+// GoroutineID 获取当前协程ID
+func GoroutineID() string {
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
 	stk := strings.TrimPrefix(string(buf[:n]), "goroutine ")

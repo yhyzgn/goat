@@ -48,7 +48,7 @@ func (l *Local) Clear() {
 	l.store.Lock()
 	defer l.store.Unlock()
 
-	delete(l.store.mp, GoroutineId())
+	delete(l.store.mp, GoroutineID())
 }
 
 // getMap 获取当前协程上的全部存储数据
@@ -56,12 +56,12 @@ func (l *Local) getMap() map[interface{}]interface{} {
 	l.store.Lock()
 	defer l.store.Unlock()
 
-	goId := GoroutineId()
-	if m, _ := l.store.mp[goId]; m != nil {
+	goID := GoroutineID()
+	if m, _ := l.store.mp[goID]; m != nil {
 		return m
 	}
 
 	m := make(map[interface{}]interface{})
-	l.store.mp[goId] = m
+	l.store.mp[goID] = m
 	return m
 }
