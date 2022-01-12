@@ -256,20 +256,20 @@ func stringToFloat(src string) float64 {
 	if src == "" {
 		return 0
 	}
-	if res, err := strconv.ParseFloat(src, 64); err != nil {
+	res, err := strconv.ParseFloat(src, 64)
+	if err != nil {
 		return 0
-	} else {
-		return res
 	}
+	return res
 }
 
 func stringToInt64(src string) int64 {
 	if src == "" {
 		return 0
 	}
-	if res, err := strconv.ParseInt(src, 10, 64); err != nil {
+	res, err := strconv.ParseInt(src, 10, 64)
+	if err != nil {
 		return 0
-	} else {
-		return res
 	}
+	return res
 }
