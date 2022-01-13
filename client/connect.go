@@ -22,19 +22,21 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/yhyzgn/gog"
 )
 
-// Connect CONNECT 协议
+// Connect 协议
 func Connect(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodConnect, url, nil)
 	if err != nil {
 		gog.Error(err)
-		cancel()
 		return false
 	}
 
@@ -43,7 +45,12 @@ func Connect(url string) bool {
 		gog.Error(err)
 		return false
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(res.Body)
 
 	return res.StatusCode == http.StatusOK
 }

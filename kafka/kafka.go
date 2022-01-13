@@ -56,12 +56,12 @@ func (s *KfkService) start() {
 		// 只取有效数据
 		ln := len(s.buff)
 		if ln > 0 {
-			msgs := make([]kafka.Message, 0)
+			msgList := make([]kafka.Message, 0)
 			for i := 0; i < ln; i++ {
-				msgs = append(msgs, *(<-s.buff))
+				msgList = append(msgList, *(<-s.buff))
 			}
-			if len(msgs) > 0 {
-				s.send(msgs)
+			if len(msgList) > 0 {
+				s.send(msgList)
 			}
 		}
 		// 3s 发送一次
@@ -69,9 +69,9 @@ func (s *KfkService) start() {
 	}
 }
 
-func (s *KfkService) send(msgs []kafka.Message) {
+func (s *KfkService) send(msgList []kafka.Message) {
 	if s.writer != nil {
-		if err := s.writer.WriteMessages(context.Background(), msgs...); err != nil {
+		if err := s.writer.WriteMessages(context.Background(), msgList...); err != nil {
 			fmt.Println("kafka 服务发送数据失败：", err)
 		}
 	}
@@ -85,11 +85,11 @@ func (s *KfkService) InitWriter(topicName KfkTopicName) (err error) {
 		err = fmt.Errorf("topic [%s] not found", topicName)
 		return
 	}
-	s.writer = kafka.NewWriter(kafka.WriterConfig{
-		Brokers:  s.hosts,
+	s.writer = &kafka.Writer{
+		Addr:     kafka.TCP(s.hosts...),
 		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
-	})
+	}
 	return
 }
 

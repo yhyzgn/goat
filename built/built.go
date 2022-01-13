@@ -31,7 +31,7 @@ import (
 var (
 	Name    = "goat"  // 名称
 	Version = "1.0.0" // 版本
-	BuiltAt = ""      // 构建时间
+	At      = ""      // 构建时间
 )
 
 // 启动信息
@@ -44,6 +44,6 @@ var (
 // 项目启动时，生成系统信息
 func init() {
 	FullName = fmt.Sprintf("%s-%s", Name, Version)
-	FullNameWithBuildAt = fmt.Sprintf("%s (%s)", FullName, BuiltAt)
+	FullNameWithBuildAt = fmt.Sprintf("%s (%s)", FullName, At)
 	StartedAt = date.Now()
 }

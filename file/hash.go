@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"github.com/yhyzgn/gog"
 	"io"
 	"os"
 )
@@ -16,7 +17,12 @@ func MD5(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(f)
 
 	h := md5.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -31,7 +37,12 @@ func SHA1(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(f)
 
 	h := sha1.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -46,7 +57,12 @@ func SHA256(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(f)
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -61,7 +77,12 @@ func SHA512(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(f)
 
 	h := sha512.New()
 	if _, err := io.Copy(h, f); err != nil {

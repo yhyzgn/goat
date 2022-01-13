@@ -28,7 +28,7 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	res := Connect("http://www.baidu.com")
+	res := Connect("https://www.baidu.com")
 	fmt.Println(res)
 
 	addr, err := net.InterfaceAddrs()

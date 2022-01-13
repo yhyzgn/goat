@@ -55,7 +55,7 @@ type NoPadding struct {
 }
 
 // Padding ...
-func (*NoPadding) Padding(src []byte, blockSize int) []byte {
+func (*NoPadding) Padding(src []byte, _ int) []byte {
 	return src
 }
 

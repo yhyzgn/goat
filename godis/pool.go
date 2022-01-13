@@ -9,6 +9,7 @@ package godis
 import (
 	"context"
 	"fmt"
+	"github.com/yhyzgn/gog"
 	"regexp"
 	"strings"
 	"time"
@@ -27,7 +28,12 @@ type RedisPool struct {
 // 回调执行，以便 connection 的统一获取和关闭
 func (rp *RedisPool) call(key Key, cb func(conn redis.Conn, realKey string) (interface{}, error)) (interface{}, error) {
 	conn := rp.Pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		err := conn.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(conn)
 	return cb(conn, rp.withPrefix(key))
 }
 
@@ -48,7 +54,12 @@ func (rp *RedisPool) Ping() (err error) {
 		err = errors.WithMessage(err, "Pool.GetContext")
 		return
 	}
-	defer coon.Close()
+	defer func(coon redis.Conn) {
+		err := coon.Close()
+		if err != nil {
+			gog.Error(err)
+		}
+	}(coon)
 
 	const content = "Hello Redis! Here goes gateway"
 	response, err := redis.String(coon.Do("PING", content))
