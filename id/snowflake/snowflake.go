@@ -91,9 +91,9 @@ func (sf *Snowflake) Next() int64 {
 }
 
 // GetDeviceID 获取数据中心ID和机器ID
-func GetDeviceID(sid int64) (datacenterid, workerid int64) {
-	datacenterid = (sid >> dataCenterIDShift) & dataCenterIDMax
-	workerid = (sid >> workerIDShift) & workerIDMax
+func GetDeviceID(sid int64) (datacenterId, workerId int64) {
+	datacenterId = (sid >> dataCenterIDShift) & dataCenterIDMax
+	workerId = (sid >> workerIDShift) & workerIDMax
 	return
 }
 
