@@ -1,6 +1,6 @@
 module github.com/yhyzgn/goat
 
-go 1.18
+go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.0.0
@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/segmentio/kafka-go v0.4.32
 	github.com/yhyzgn/gog v1.2.2
-	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
+	golang.org/x/crypto v0.21.0
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/yaml.v3 v3.0.1
 )

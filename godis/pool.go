@@ -42,7 +42,7 @@ func (rp *RedisPool) withPrefix(key Key) string {
 	if rp.KeyPrefix == "" || strings.HasPrefix(string(key), rp.KeyPrefix) {
 		return string(key)
 	}
-	return fmt.Sprintf("%s:%s", rp.KeyPrefix, string(key))
+	return rp.KeyPrefix + string(key)
 }
 
 // Ping ping检测
@@ -113,7 +113,7 @@ func (rp *RedisPool) Keys(key Key) ([]string, error) {
 	// 此处获取到的key带有前缀，需要把前缀都去掉
 	temp := res.([]string)
 	keys := make([]string, len(temp))
-	rpx := regexp.MustCompile("^" + rp.KeyPrefix + ":?")
+	rpx := regexp.MustCompile("^" + rp.KeyPrefix + "?")
 	for i, k := range temp {
 		if rpx.MatchString(k) {
 			keys[i] = rpx.ReplaceAllString(k, "")
